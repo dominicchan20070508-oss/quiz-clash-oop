@@ -8,6 +8,19 @@
 
 ---
 
+## 在线部署（让异地朋友直接打开网页就能玩）
+
+GitHub 只存代码；本游戏需要运行 Node 房间服务器。点下面按钮可一键免费部署到 Render（用 GitHub 账号登录 Render，约 1–2 分钟）：
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/dominicchan20070508-oss/quiz-clash-oop)
+
+部署完成后得到公网地址（形如 `https://quiz-clash-oop.onrender.com`）。把该网址或大厅里的**二维码/邀请链接**发给朋友即可跨网对战——邀请链接与二维码会自动使用当前公网域名。
+
+> Render 免费服务一段时间无人访问会休眠，朋友首次打开可能需等待约 30–60 秒唤醒，属正常。
+> Railway / Fly.io 等同样可用：构建 `npm install`，启动 `node server.js`（端口取 `PORT` 环境变量，已兼容）。
+
+---
+
 ## 一、运行
 
 ```powershell
@@ -82,6 +95,7 @@ D:\OOPgame\
 
 D:\QuizClash\
   ├─ server.js                        零依赖服务器：静态 + SSE + 权威对局
+  ├─ render.yaml                      Render 一键部署配置
   ├─ package.json · README.md
   └─ public\
      ├─ index.html
@@ -100,5 +114,5 @@ D:\QuizClash\
 
 **已覆盖**：创建/加入房间、房间号 + 二维码 + 邀请链接复制、选角/准备/开始、英文 OOP 题库、即时正确/错误反馈与锁定、连胜加成、能量技能与冷却、三类道具、表情包、音效音乐、动态胜负、Rematch、人机练习、掉线/离开提示。
 
-**暂未包含**：公网部署（当前为本机/局域网；外网对战需内网穿透或部署到服务器）、排位/账号/好友/文字聊天、原生 App。
+**暂未包含**：排位/账号/好友/文字聊天、原生 App（公网部署已提供 Render 一键配置，见顶部）。
 > 网络层封装在 `transport.js`，可平滑替换为 WebSocket / WebRTC。
