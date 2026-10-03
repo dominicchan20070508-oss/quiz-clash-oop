@@ -1,0 +1,11 @@
+{
+  "name": "quizclash",
+  "version": "1.0.0",
+  "description": "Quiz Clash - realtime 1v1 timed quiz battle (zero npm dependencies)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "ruleset_id": "quizclash-mvp-1.0.0",
+  "license": "MIT"
+}
