@@ -244,8 +244,8 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://localhost');
   const pathname = decodeURIComponent(u.pathname);
   if (pathname === '/api/events') return handleSSE(req, res, u);
-  if (pathname === '/api/room/create' && req.method === 'POST') return readBody(req, res, b => apiCreate(res, b));
-  if (pathname === '/api/room/join' && req.method === 'POST') return readBody(req, res, b => apiJoin(res, b));
+  if (pathname === '/api/room/create' && req.method === 'POST') return readBody(req, res, b => apiCreate(req, res, b));
+  if (pathname === '/api/room/join' && req.method === 'POST') return readBody(req, res, b => apiJoin(req, res, b));
   if (pathname === '/api/action' && req.method === 'POST') return readBody(req, res, b => apiAction(res, b));
   if (pathname.startsWith('/api/')) { res.writeHead(404); return res.end('{"error":"not found"}'); }
   return serveStatic(res, pathname);
@@ -262,26 +262,37 @@ function auth(b) {
   if (!room || !player || player.token !== token) return null;
   return { room, player };
 }
-function inviteUrls(code) {
-  const list = [`http://localhost:${PORT}/?room=${code}`];
-  for (const ip of lanIPs()) list.push(`http://${ip}:${PORT}/?room=${code}`);
+function publicBase(req) {
+  if (!req) return null;
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  if (!host) return null;
+  const xf = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const proto = xf || (/^(localhost|127\.|192\.168\.|10\.|172\.)/.test(host) ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
+function inviteUrls(code, req) {
+  const list = [];
+  const pub = publicBase(req);
+  if (pub) list.push(`${pub}/?room=${code}`);
+  list.push(`http://localhost:${PORT}/?room=${code}`);
+  for (const ip of lanIPs()) { const u = `http://${ip}:${PORT}/?room=${code}`; if (!list.includes(u)) list.push(u); }
   return list;
 }
-function apiCreate(res, b) {
+function apiCreate(req, res, b) {
   const name = cleanName(b.name), char = CHAR_IDS.has(b.char) ? b.char : CHARACTERS[0].id;
   let code; do { code = randCode(); } while (rooms.has(code));
   const room = new ServerRoom(code); rooms.set(code, room);
   room.add(makePlayer(name, char, true));
-  json(res, 200, { ok: true, code, playerId: [...room.players.keys()][0], token: [...room.players.values()][0].token, inviteUrls: inviteUrls(code) });
+  json(res, 200, { ok: true, code, playerId: [...room.players.keys()][0], token: [...room.players.values()][0].token, inviteUrls: inviteUrls(code, req) });
 }
-function apiJoin(res, b) {
+function apiJoin(req, res, b) {
   const code = String(b.code || '').toUpperCase(), room = rooms.get(code);
   if (!room) return json(res, 404, { error: 'Room not found, please check the code.' });
   if (room.state !== 'lobby') return json(res, 409, { error: 'The match has already started.' });
   if (room.players.size >= 2) return json(res, 409, { error: 'Room is full.' });
   const p = makePlayer(cleanName(b.name), CHAR_IDS.has(b.char) ? b.char : CHARACTERS[1].id, false);
   room.add(p);
-  json(res, 200, { ok: true, code, playerId: p.id, token: p.token, inviteUrls: inviteUrls(code) });
+  json(res, 200, { ok: true, code, playerId: p.id, token: p.token, inviteUrls: inviteUrls(code, req) });
 }
 function apiAction(res, b) {
   const a = auth(b);
